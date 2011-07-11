@@ -7,6 +7,20 @@
 
 #include "ruby.h"
 
+#ifdef __MACRUBY__
+/* We cannot use the GC memory functions here because the underlying libedit
+ * function will call free() on the memory, resulting in a leak.
+ */
+# undef ALLOC
+# define ALLOC(type) (type*)malloc(sizeof(type))
+# undef ALLOC_N
+# define ALLOC_N(type,n) ((type *)malloc(sizeof(type) * (n)))
+# undef REALLOC_N
+# define REALLOC_N(var,type,n) \
+    (var)=(type*)realloc((char*)(var),(n) * sizeof(type))
+# define ruby_xfree(x) free(x)
+#endif
+
 #if HAVE_RUBY_RE_H
 #include "ruby/re.h"
 #endif
@@ -67,6 +81,7 @@ static char *fstrndup(const char *ptr, unsigned long len);
 static FBuffer *fbuffer_alloc();
 static FBuffer *fbuffer_alloc_with_length(unsigned long initial_length);
 static void fbuffer_free(FBuffer *fb);
+//static void fbuffer_free_only_buffer(FBuffer *fb);
 static void fbuffer_clear(FBuffer *fb);
 static void fbuffer_append(FBuffer *fb, const char *newstr, unsigned long len);
 static void fbuffer_append_long(FBuffer *fb, long number);
